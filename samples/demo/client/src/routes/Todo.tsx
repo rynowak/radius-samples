@@ -42,6 +42,16 @@ const deleteItem = async (item: Item) => {
   });
 }
 
+const evaluateItem = async (item: Item): Promise<Response> => {
+  return await fetch(`/api/todos/evaluate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(item),
+  });
+}
+
 export default function Todo() {
   const [reloadCount, setReloadCount] = React.useState(0);
   const [response, setResponse] = React.useState<ItemResponse | null>(null)
@@ -61,6 +71,8 @@ export default function Todo() {
       mounted = false;
     }
   }, [reloadCount])
+
+  const [feedback, setFeedback] = React.useState<string | null>(null);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value)
@@ -82,6 +94,12 @@ export default function Todo() {
   const handleComplete = (item: Item) => {
     item.done = true
     updateItem(item).then(() => setReloadCount(reloadCount + 1));
+  }
+
+  const handleEvaluate = (e: FormEvent) => {
+    e.preventDefault();
+    const item = { title: title, done: false, id: undefined }
+    evaluateItem(item).then(response => response.json()).then(data => { setFeedback(data.message) });
   }
 
   return <>
@@ -126,13 +144,18 @@ export default function Todo() {
       </div>
       <div className="col-4 p-4 bg-gradient bg-secondary bg-opacity-25 edit-sidebar vh-100">
         <h3>Add an item</h3>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="off">
           <div className="mb-3">
             <label className="form-label" htmlFor="titleInput">Title</label>
             <input id="titleInput" placeholder="What do you need to do?" type="text" className="form-control" value={title} onChange={handleChange} />
           </div>
-          <button className="btn btn-small btn-outline-primary px-3 " type="submit">Add<i className="material-icons ms-4 align-top">send</i></button>
+          <button className="btn btn-small btn-outline-primary px-3" type="submit">Add<i className="material-icons ms-4 align-top">send</i></button>
+          <button className="btn btn-small btn-outline-primary px-3 mx-1" type="button" onClick={handleEvaluate}>Feedback<i className="material-icons ms-4 align-top">question_mark</i></button>
         </form>
+        <div className="py-3">
+          <h3>Copilot feedback</h3>
+          <div className="mb-3">{feedback}</div>
+        </div>
       </div>
     </div>
   </>;

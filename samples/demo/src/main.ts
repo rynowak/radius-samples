@@ -27,6 +27,7 @@ import * as container from './api/container';
 import * as health from './api/health';
 import * as todo from './api/todo';
 import { createFactory } from './db/repository';
+import { createOpenAIClient } from './ai';
 
 dotenv.config();
 
@@ -39,9 +40,11 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "www")));
 
 const factory = createFactory()
+const ai = createOpenAIClient();
+
 container.register(app);
 health.register(app, factory);
-todo.register(app, factory);
+todo.register(app, factory, ai);
 
 app.get('*', (req: express.Request, res: express.Response) => {
     // Pass through unhandled requests to React.

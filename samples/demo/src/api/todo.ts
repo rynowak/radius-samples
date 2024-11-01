@@ -1,7 +1,8 @@
 import * as express from "express";
+import { OpenAI } from 'openai';
 import { Item, RepositoryFactory } from "../db/repository";
 
-export const register = (app: express.Application, factory: RepositoryFactory) => {
+export const register = (app: express.Application, factory: RepositoryFactory, ai?: OpenAI) => {
     app.get(`/api/todos`, async (req, res) => {
         const respository = await factory.create()
         try {
@@ -75,6 +76,26 @@ export const register = (app: express.Application, factory: RepositoryFactory) =
 
     // Environment variable that controls if the failure simulation is enabled. Defaults to 0 (disabled).
     const radiusDemoFailureEnabled = parseInt(process.env.RADIUS_DEMO_FAILURE_ENABLED || '0');
+
+    app.post(`/api/todos/evaluate`, async (req, res) => {
+        const item = req.body as Item;
+        if (!ai) {
+            res.status(200);
+            res.json({ message: 'AI is not configured, so I have no feedback for you.' });
+            return
+        }
+
+        const chatCompletion = await ai.chat.completions.create({
+            messages: [
+                { role: "system", content: "You are a helpful assistant that gives users feedback on their TODO list items. Use the persona of Clippy. Your feedback MUST be very brief, 2-3 sentences maximum." },
+                { role: 'user', content: item.title ?? ''}
+            ],
+            model: '',
+        });
+
+        res.status(200);
+        res.json({ message: chatCompletion.choices[0].message.content});
+    });
 
     app.post(`/api/todos`, async (req, res) => {
         const respository = await factory.create()
